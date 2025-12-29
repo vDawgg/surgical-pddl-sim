@@ -1,0 +1,36 @@
+import numpy as np
+from isaacsim.robot_motion.motion_generation import RmpFlow, ArticulationMotionPolicy
+from isaacsim.core.utils.types import ArticulationAction
+from isaacsim.core.api.robots import Robot
+
+from src.constants import psm_dir
+
+
+class LulaMotionPlanner:
+    def __init__(
+        self,
+        robot: Robot,
+    ) -> None:
+        self._robot = robot
+        self._rmpflow = RmpFlow(
+            robot_description_path=str(psm_dir / "robot_description.yaml"),
+            urdf_path=str(psm_dir / "psm_col.urdf"),
+            rmpflow_config_path=str(psm_dir / "rmpflow_config.yaml"),
+            end_effector_frame_name="psm_tool_tip_link",
+            maximum_substep_size=0.0033,
+        )
+        self._rmpflow.set_robot_base_pose(*robot.get_world_pose())
+        self._articulation_policy = ArticulationMotionPolicy(robot, self._rmpflow)
+
+    def set_end_effector_target(
+        self, target_position: np.ndarray, target_orientation: np.ndarray | None = None
+    ) -> None:
+        self._rmpflow.set_end_effector_target(
+            target_position=target_position, target_orientation=target_orientation
+        )
+
+    def get_next_articulation_action(self) -> ArticulationAction:
+        return self._articulation_policy.get_next_articulation_action()
+
+    def reset(self) -> None:
+        self._rmpflow.reset()
