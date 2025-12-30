@@ -1,17 +1,9 @@
-from enum import StrEnum, auto
-
-import numpy as np
 from isaacsim.core.api.robots import Robot
 from isaacsim.core.utils.types import ArticulationAction
 
-from src.controller.lula_planner import LulaMotionPlanner
 from src.base.dvrk_task import GripperPositions
-
-
-class Action(StrEnum):
-    MOVE = auto()
-    PICK = auto()
-    PLACE = auto()
+from src.controller.lula_planner import LulaMotionPlanner
+from src.plan.plan import Action, ActionType
 
 
 class LulaController:
@@ -35,27 +27,27 @@ class LulaController:
 
     def forward(
         self,
-        action_type: Action,
-        target_position: np.ndarray | None = None,
-        target_orientation: np.ndarray | None = None,
+        action: Action,
     ) -> ArticulationAction:
         joint_positions = self._robot_articulation.get_joint_positions()
 
-        if action_type == Action.MOVE:
-            assert target_position is not None
-            self._planner.set_end_effector_target(target_position, target_orientation)
+        if action.action_type == ActionType.MOVE:
+            assert action.target_position is not None
+            self._planner.set_end_effector_target(
+                action.target_position, action.target_orientation
+            )
             action = self._planner.get_next_articulation_action()
             return action
 
         # TODO: Make sure the pick and place actions are carried out with the rest of the robot staying
         #       in the same configuration. Currently the joints just give up when these actions are executed
         #       -> This currently only works because gravity is disabled on the robot
-        elif action_type == Action.PICK:
+        elif action.action_type == ActionType.PICK:
             new_joint_positions = joint_positions.copy()
             new_joint_positions[self._gripper_indices] = self._gripper_positions.close
             return ArticulationAction(joint_positions=new_joint_positions)
 
-        elif action_type == Action.PLACE:
+        elif action.action_type == ActionType.PLACE:
             new_joint_positions = joint_positions.copy()
             new_joint_positions[self._gripper_indices] = self._gripper_positions.open
             return ArticulationAction(joint_positions=new_joint_positions)
