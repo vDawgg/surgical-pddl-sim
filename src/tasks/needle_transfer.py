@@ -1,6 +1,6 @@
 import numpy as np
 from isaacsim.core.utils.stage import add_reference_to_stage
-from isaacsim.core.prims import SingleRigidPrim
+from isaacsim.core.prims import SingleRigidPrim, SingleXFormPrim
 
 from src.base.dvrk_task import DvrkTask
 from src.constants import props_dir
@@ -14,12 +14,20 @@ class NeedleTransfer(DvrkTask):
         super().set_up_scene(scene)
         needle_path = props_dir / "needle.usd"
         add_reference_to_stage(usd_path=str(needle_path), prim_path="/World/Needle")
-        self.needle: SingleRigidPrim = scene.add(
+        self.needle = scene.add(
             SingleRigidPrim(
                 prim_path="/World/Needle",
                 name="Needle",
                 position=np.array([0.05, 0.05, 0.0]),
                 scale=np.array([0.3, 0.3, 0.3]),
+            )
+        )
+        self.goal = scene.add(
+            SingleXFormPrim(
+                prim_path="/World/Goal",
+                name="Goal",
+                position=np.array([0.1, 0.1, 0.1]),
+                orientation=None,  # TODO: Change this to something more interesting down the line
             )
         )
 
