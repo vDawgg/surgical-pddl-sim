@@ -68,12 +68,20 @@ class PegAndRing(DvrkTask):
             name="Blue",
             color=np.array([0.0, 0.0, 1.0]),
         )
+        self.pink = OmniPBR(
+            prim_path="/World/Looks/Pink", name="Pink", color=np.array([1.0, 0.0, 1.0])
+        )
+        self.yellow = OmniPBR(
+            prim_path="/World/Looks/Yellow",
+            name="Yellow",
+            color=np.array([1.0, 1.0, 0.0]),
+        )
 
     # TODO: Make this configurable according to the problem specified in init
     def set_up_scene(self, scene):
         super().set_up_scene(scene)
         print("Calling scene setup")
-        pegs_path = props_dir / "pegs_no_rigid_body.usd"
+        pegs_path = props_dir / "pegs.usd"
         ring_path = props_dir / "ring.usd"
         add_reference_to_stage(usd_path=str(pegs_path), prim_path="/World/Pegs")
         add_reference_to_stage(usd_path=str(ring_path), prim_path="/World/Red_Ring")
@@ -90,10 +98,12 @@ class PegAndRing(DvrkTask):
         red_peg_name = "Peg"
         green_peg_name = "Peg_01"
         blue_peg_name = "Peg_03"
+        pink_peg_name = "Peg_02"
+        yellow_peg_name = "Peg_04"
 
-        red_ring_starting_peg = "Peg_02"
-        green_ring_starting_peg = "Peg_04"
-        blue_ring_starting_peg = "Peg"
+        red_ring_starting_peg = pink_peg_name
+        green_ring_starting_peg = yellow_peg_name
+        blue_ring_starting_peg = red_peg_name
 
         self.red_peg = OffsetWrapper(f"/World/Pegs/pegs/{red_peg_name}", "red_peg_view")
         self.green_peg = OffsetWrapper(
@@ -102,10 +112,18 @@ class PegAndRing(DvrkTask):
         self.blue_peg = OffsetWrapper(
             f"/World/Pegs/pegs/{blue_peg_name}", "blue_peg_view"
         )
+        self.pink_peg = OffsetWrapper(
+            f"/World/Pegs/pegs/{pink_peg_name}", "pink_peg_view"
+        )
+        self.yellow_peg = OffsetWrapper(
+            f"/World/Pegs/pegs/{yellow_peg_name}", "yellow_peg_view"
+        )
 
         self.red_peg.apply_visual_material(self.red)
         self.green_peg.apply_visual_material(self.green)
         self.blue_peg.apply_visual_material(self.blue)
+        self.pink_peg.apply_visual_material(self.pink)
+        self.yellow_peg.apply_visual_material(self.yellow)
 
         self.red_ring = scene.add(
             OffsetWrapper(
