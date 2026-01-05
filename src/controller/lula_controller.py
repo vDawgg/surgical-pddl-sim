@@ -1,7 +1,7 @@
 from isaacsim.core.api.robots import Robot
 from isaacsim.core.utils.types import ArticulationAction
 
-from src.base.dvrk_task import GripperPositions
+from src.base.task import GripperPositions
 from src.controller.lula_planner import LulaMotionPlanner
 from src.plan.plan import Action, ActionType
 

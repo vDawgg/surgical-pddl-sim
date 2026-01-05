@@ -3,16 +3,12 @@ from isaacsim.core.utils.stage import add_reference_to_stage
 from isaacsim.core.api.materials import OmniPBR
 from isaacsim.core.prims import SingleXFormPrim, XFormPrim
 
-from src.base.dvrk_task import DvrkTask
+from src.base.prim import OffsetPrim
+from src.base.task import DvrkTask
 from src.constants import props_dir
 
 
-class OffsetWrapper(SingleXFormPrim):
-    """
-    Wrapper for Ring and Peg prims to allow for the definition of an x-offset.
-    This offset ensures the EE is able to grasp the Ring at its border and drop it of on the Peg.
-    """
-
+class Peg(OffsetPrim):
     def __init__(
         self,
         prim_path,
@@ -26,6 +22,7 @@ class OffsetWrapper(SingleXFormPrim):
     ):
         super().__init__(
             prim_path,
+            np.array([0.01, 0.0, -0.004]),
             name,
             position,
             translation,
@@ -34,11 +31,31 @@ class OffsetWrapper(SingleXFormPrim):
             visible,
             reset_xform_properties,
         )
-        self.offset = np.array([0.01, 0.0, 0.0])
 
-    def get_world_pose(self):
-        position, orientation = super().get_world_pose()
-        return position + self.offset, orientation
+
+class Ring(OffsetPrim):
+    def __init__(
+        self,
+        prim_path,
+        name="xform_prim",
+        position=None,
+        translation=None,
+        orientation=None,
+        scale=None,
+        visible=None,
+        reset_xform_properties=True,
+    ):
+        super().__init__(
+            prim_path,
+            np.array([0.01, 0.0, 0.0]),
+            name,
+            position,
+            translation,
+            orientation,
+            scale,
+            visible,
+            reset_xform_properties,
+        )
 
 
 class PegAndRing(DvrkTask):
@@ -105,19 +122,11 @@ class PegAndRing(DvrkTask):
         green_ring_starting_peg = yellow_peg_name
         blue_ring_starting_peg = red_peg_name
 
-        self.red_peg = OffsetWrapper(f"/World/Pegs/pegs/{red_peg_name}", "red_peg_view")
-        self.green_peg = OffsetWrapper(
-            f"/World/Pegs/pegs/{green_peg_name}", "red_peg_view"
-        )
-        self.blue_peg = OffsetWrapper(
-            f"/World/Pegs/pegs/{blue_peg_name}", "blue_peg_view"
-        )
-        self.pink_peg = OffsetWrapper(
-            f"/World/Pegs/pegs/{pink_peg_name}", "pink_peg_view"
-        )
-        self.yellow_peg = OffsetWrapper(
-            f"/World/Pegs/pegs/{yellow_peg_name}", "yellow_peg_view"
-        )
+        self.red_peg = Peg(f"/World/Pegs/pegs/{red_peg_name}", "red_peg_view")
+        self.green_peg = Peg(f"/World/Pegs/pegs/{green_peg_name}", "red_peg_view")
+        self.blue_peg = Peg(f"/World/Pegs/pegs/{blue_peg_name}", "blue_peg_view")
+        self.pink_peg = Peg(f"/World/Pegs/pegs/{pink_peg_name}", "pink_peg_view")
+        self.yellow_peg = Peg(f"/World/Pegs/pegs/{yellow_peg_name}", "yellow_peg_view")
 
         self.red_peg.apply_visual_material(self.red)
         self.green_peg.apply_visual_material(self.green)
@@ -126,7 +135,7 @@ class PegAndRing(DvrkTask):
         self.yellow_peg.apply_visual_material(self.yellow)
 
         self.red_ring = scene.add(
-            OffsetWrapper(
+            Ring(
                 prim_path="/World/Red_Ring",
                 name="Red_Ring",
                 position=np.array(
@@ -135,7 +144,7 @@ class PegAndRing(DvrkTask):
             )
         )
         self.green_ring = scene.add(
-            OffsetWrapper(
+            Ring(
                 prim_path="/World/Green_Ring",
                 name="Green_Ring",
                 position=np.array(
@@ -144,7 +153,7 @@ class PegAndRing(DvrkTask):
             )
         )
         self.blue_ring = scene.add(
-            OffsetWrapper(
+            Ring(
                 prim_path="/World/Blue_Ring",
                 name="Blue_Ring",
                 position=np.array(
@@ -156,3 +165,16 @@ class PegAndRing(DvrkTask):
         self.red_ring.apply_visual_material(self.red)
         self.green_ring.apply_visual_material(self.green)
         self.blue_ring.apply_visual_material(self.blue)
+
+    def get_prim(self, prim_name: str) -> SingleXFormPrim:
+        match prim_name:
+            case "red_peg":
+                return self.red_peg
+            case "green_peg":
+                return self.green_peg
+            case "blue_peg":
+                return self.blue_peg
+            case "pink_peg":
+                return self.pink_peg
+            case "yellow_peg":
+                return self.yellow_peg

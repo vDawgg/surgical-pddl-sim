@@ -2,7 +2,7 @@ import numpy as np
 from isaacsim.core.utils.stage import add_reference_to_stage
 from isaacsim.core.prims import SingleRigidPrim, SingleXFormPrim
 
-from src.base.dvrk_task import DvrkTask
+from src.base.task import DvrkTask
 from src.constants import props_dir
 
 

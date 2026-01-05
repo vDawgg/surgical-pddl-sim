@@ -1,8 +1,10 @@
+import re
 from enum import StrEnum, auto
-from typing import Self
 
 import numpy as np
 from isaacsim.core.prims import SingleXFormPrim
+
+from src.tasks.peg_and_ring import PegAndRing
 
 
 class ActionType(StrEnum):
@@ -59,8 +61,23 @@ class Plan:
         return cls(action_sequence)
 
     @classmethod
-    def from_pddl(self):
-        pass
+    def from_pddl(cls, task: PegAndRing, plan_path: str):
+        move_pattern = r"\(\s*move\s+(\w+)[^)]*\)"
+        pick_pattern = r"\(\s*pick\b[^)]*\)"
+        place_pattern = r"\(\s*place\b[^)]*\)"
+        action_sequence = []
+        with open(plan_path) as f:
+            for line in f.readlines():
+                if re.match(move_pattern, line):
+                    prim = re.match(move_pattern, line).group(1)
+                    action_sequence.append(
+                        Action.from_prim(ActionType.MOVE, task.get_prim(prim))
+                    )
+                elif re.match(pick_pattern, line):
+                    action_sequence.append(Action.from_prim(ActionType.PICK))
+                elif re.match(place_pattern, line):
+                    action_sequence.append(Action.from_prim(ActionType.PLACE))
+            return cls(action_sequence)
 
     # TODO: It would still be nice to implement a cleaner way of doing this
     def add_via_points_to_plan(self):

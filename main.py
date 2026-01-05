@@ -5,6 +5,7 @@ from src.tasks import Task
 parser = ArgumentParser()
 parser.add_argument("--task", choices=[t.value for t in Task], required=True)
 parser.add_argument("--num_trials", default=2)
+parser.add_argument("--plan_path")
 args = parser.parse_args()
 
 from isaacsim.simulation_app import SimulationApp
@@ -22,12 +23,14 @@ from isaacsim.core.prims import RigidPrim
 from src.controller.lula_controller import LulaController
 from src.controller.physics_step_wrapper import PhysicsStepWrapper
 from src.controller.lula_planner import LulaMotionPlanner
+from src.plan.plan import Plan
 from src.tasks import get_plan, get_task
 
 
 if __name__ == "__main__":
     task_name = args.task
     num_trials = int(args.num_trials)
+    plan_path = args.plan_path
     task = get_task(task_name)
 
     ## Simulation setup
@@ -50,7 +53,11 @@ if __name__ == "__main__":
     psm_tool_tip = RigidPrim("/World/dVRK/psm_tool_tip_link", "psm_tool_tip_view")
     psm_tool_tip_pos = psm_tool_tip.get_world_poses()[0][0]
 
-    plan = get_plan(task)
+    if plan_path is None:
+        plan = get_plan(task)
+    else:
+        # FIXME: The EE currently stops before being able to properly pick up the ring
+        plan = Plan.from_pddl(task, plan_path)
     plan.add_via_points_to_plan()
     print(
         [

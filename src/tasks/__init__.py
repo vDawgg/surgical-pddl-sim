@@ -2,7 +2,7 @@ from enum import StrEnum, auto
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from src.base.dvrk_task import DvrkTask
+    from src.base.task import DvrkTask
     from src.plan.plan import Plan
 
 
