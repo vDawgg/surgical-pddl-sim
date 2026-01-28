@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 class Task(StrEnum):
     NEEDLE_TRANSFER = auto()
-    PEG_AND_RING = auto()
+    RING_AND_PEG = auto()
 
 
 def get_task(task_name: str) -> "DvrkTask":
@@ -18,7 +18,7 @@ def get_task(task_name: str) -> "DvrkTask":
     match task_name:
         case Task.NEEDLE_TRANSFER:
             return NeedleTransfer(name="needle_transfer_task")
-        case Task.PEG_AND_RING:
+        case Task.RING_AND_PEG:
             return PegAndRing(name="peg_and_ring_task")
 
 

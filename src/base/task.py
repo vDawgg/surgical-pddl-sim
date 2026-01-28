@@ -4,6 +4,7 @@ from isaacsim.core.api.scenes import Scene
 from isaacsim.core.utils.stage import add_reference_to_stage
 from isaacsim.core.api.tasks import BaseTask
 
+from src.base.prim import RigidOffsetPrim
 from src.constants import psm_dir
 
 
@@ -28,6 +29,22 @@ class GripperPositions:
     def __init__(self, close: np.ndarray, open: np.ndarray | None = None):
         self.open = open or np.array([-0.5, 0.5])
         self.close = close
+
+
+class GoalConfig:
+    """
+    Specifies the goal configuration for one object.
+    """
+
+    def __init__(self, prim: RigidOffsetPrim, goal_prim: RigidOffsetPrim):
+        self.prim = prim
+        self.goal_prim = goal_prim
+
+    def is_at_goal(self):
+        x_y_pos = self.prim.get_world_position_no_offset()
+        target_pos = self.goal_prim.get_world_position_no_offset()
+        # TODO: Tune this difference where appropriate
+        return np.sqrt(np.sum(x_y_pos - target_pos) ** 2) <= 0.005
 
 
 class DvrkTask(BaseTask):
@@ -64,9 +81,10 @@ class DvrkTask(BaseTask):
             effort_limit=0.1,
             velocity_limit=0.2,
         )
-        # NOTE: This needs to be set on a per-task basis as the ideal closed position will vary depending on the object
+        # This needs to be set on a per-task basis as the ideal closed position will vary depending on the object
         self.gripper_positions = GripperPositions(gripper_closed_position)
         self.action_sequence = None
+        self.goal: list[GoalConfig] | None = None
 
     def set_up_scene(self, scene: Scene) -> None:
         super().set_up_scene(scene)
@@ -135,3 +153,6 @@ class DvrkTask(BaseTask):
             positions=list(self._initial_joint_pos.values())
         )
         self._dvrk.post_reset()
+
+    def goal_reached(self):
+        return all(goal_config.is_at_goal() for goal_config in self.goal)

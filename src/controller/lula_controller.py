@@ -1,6 +1,8 @@
 from isaacsim.core.api.robots import Robot
 from isaacsim.core.utils.types import ArticulationAction
 
+import numpy as np
+
 from src.base.task import GripperPositions
 from src.controller.lula_planner import LulaMotionPlanner
 from src.plan.plan import Action, ActionType
@@ -25,6 +27,10 @@ class LulaController:
         ]
         self._gripper_positions = gripper_positions
 
+        # TODO: Tune these
+        self._position_threshold = 0.0005
+        self._gripper_threshold = 0.0005
+
     def forward(
         self,
         action: Action,
@@ -39,9 +45,6 @@ class LulaController:
             action = self._planner.get_next_articulation_action()
             return action
 
-        # TODO: Make sure the pick and place actions are carried out with the rest of the robot staying
-        #       in the same configuration. Currently the joints just give up when these actions are executed
-        #       -> This currently only works because gravity is disabled on the robot
         elif action.action_type == ActionType.PICK:
             new_joint_positions = joint_positions.copy()
             new_joint_positions[self._gripper_indices] = self._gripper_positions.close
@@ -53,3 +56,23 @@ class LulaController:
             return ArticulationAction(joint_positions=new_joint_positions)
 
         return ArticulationAction(joint_positions=joint_positions)
+
+    def completed(self, action: Action) -> bool:
+        if action.action_type == ActionType.MOVE:
+            # Position-based check for MOVE
+            current_ee_pos, _ = self._planner.get_end_effector_pose()
+            distance = np.sqrt(np.sum(current_ee_pos - action.target_position) ** 2)
+            return distance < self._position_threshold
+        elif action.action_type in (ActionType.PICK, ActionType.PLACE):
+            # Joint-based check for gripper
+            current_gripper_pos = self._robot_articulation.get_joint_positions()[
+                self._gripper_indices
+            ]
+            target = (
+                self._gripper_positions.close
+                if action.action_type == ActionType.PICK
+                else self._gripper_positions.open
+            )
+            return np.allclose(
+                current_gripper_pos, target, atol=self._gripper_threshold
+            )

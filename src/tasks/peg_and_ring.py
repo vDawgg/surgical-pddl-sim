@@ -3,12 +3,12 @@ from isaacsim.core.utils.stage import add_reference_to_stage
 from isaacsim.core.api.materials import OmniPBR
 from isaacsim.core.prims import SingleXFormPrim, XFormPrim
 
-from src.base.prim import OffsetPrim
-from src.base.task import DvrkTask
+from src.base.prim import RigidOffsetPrim
+from src.base.task import DvrkTask, GoalConfig
 from src.constants import props_dir
 
 
-class Peg(OffsetPrim):
+class Peg(RigidOffsetPrim):
     def __init__(
         self,
         prim_path,
@@ -33,7 +33,7 @@ class Peg(OffsetPrim):
         )
 
 
-class Ring(OffsetPrim):
+class Ring(RigidOffsetPrim):
     def __init__(
         self,
         prim_path,
@@ -97,7 +97,6 @@ class PegAndRing(DvrkTask):
     # TODO: Make this configurable according to the problem specified in init
     def set_up_scene(self, scene):
         super().set_up_scene(scene)
-        print("Calling scene setup")
         pegs_path = props_dir / "pegs.usd"
         ring_path = props_dir / "ring.usd"
         add_reference_to_stage(usd_path=str(pegs_path), prim_path="/World/Pegs")
@@ -123,7 +122,7 @@ class PegAndRing(DvrkTask):
         blue_ring_starting_peg = red_peg_name
 
         self.red_peg = Peg(f"/World/Pegs/pegs/{red_peg_name}", "red_peg_view")
-        self.green_peg = Peg(f"/World/Pegs/pegs/{green_peg_name}", "red_peg_view")
+        self.green_peg = Peg(f"/World/Pegs/pegs/{green_peg_name}", "green_peg_view")
         self.blue_peg = Peg(f"/World/Pegs/pegs/{blue_peg_name}", "blue_peg_view")
         self.pink_peg = Peg(f"/World/Pegs/pegs/{pink_peg_name}", "pink_peg_view")
         self.yellow_peg = Peg(f"/World/Pegs/pegs/{yellow_peg_name}", "yellow_peg_view")
@@ -166,7 +165,13 @@ class PegAndRing(DvrkTask):
         self.green_ring.apply_visual_material(self.green)
         self.blue_ring.apply_visual_material(self.blue)
 
-    def get_prim(self, prim_name: str) -> SingleXFormPrim:
+        self.goal = [
+            GoalConfig(self.red_ring, self.red_peg),
+            GoalConfig(self.green_ring, self.green_peg),
+            GoalConfig(self.blue_ring, self.blue_peg),
+        ]
+
+    def get_prim(self, prim_name: str) -> SingleXFormPrim | None:
         match prim_name:
             case "red_peg":
                 return self.red_peg
@@ -178,3 +183,5 @@ class PegAndRing(DvrkTask):
                 return self.pink_peg
             case "yellow_peg":
                 return self.yellow_peg
+            case _:
+                return None

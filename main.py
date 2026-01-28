@@ -1,18 +1,19 @@
 from argparse import ArgumentParser
+from pathlib import Path
 from src.tasks import Task
 
-# NOTE: We need to execute the parsing step here as this will otherwise be ignored due to the sim-app loading
+# We need to execute the parsing step here as this will otherwise be ignored due to the sim-app loading
 parser = ArgumentParser()
 parser.add_argument("--task", choices=[t.value for t in Task], required=True)
-parser.add_argument("--num_trials", default=2)
-parser.add_argument("--plan_path")
+parser.add_argument("--plan_path_dir", required=True)
+parser.add_argument("--headless", action="store_true")
 args = parser.parse_args()
 
 from isaacsim.simulation_app import SimulationApp
 
-simulation_app: SimulationApp = SimulationApp({"headless": False})
+simulation_app: SimulationApp = SimulationApp({"headless": args.headless})
 
-# NOTE: Suppress scientific notation for debug prints of np arrays
+# Suppress scientific notation for debug prints of np arrays
 import numpy as np
 
 np.set_printoptions(suppress=True)
@@ -21,16 +22,19 @@ from isaacsim.core.api import World
 from isaacsim.core.prims import RigidPrim
 
 from src.controller.lula_controller import LulaController
-from src.controller.physics_step_wrapper import PhysicsStepWrapper
 from src.controller.lula_planner import LulaMotionPlanner
-from src.plan.plan import Plan
-from src.tasks import get_plan, get_task
+from src.plan.plan import Plan, ParsingException
+from src.result.result import Result, Results
+from src.tasks import get_task
 
 
+# TODO: Add a camera for proper view of the workspace and capture image at the start as VLM input
+#       and at the end for verfication (for now)
 if __name__ == "__main__":
     task_name = args.task
-    num_trials = int(args.num_trials)
-    plan_path = args.plan_path
+    plan_path_dir = Path(args.plan_path_dir)
+    assert plan_path_dir.exists(), "Ensure that the given path exists"
+
     task = get_task(task_name)
 
     ## Simulation setup
@@ -46,47 +50,51 @@ if __name__ == "__main__":
         gripper_positions=task.gripper_positions,
         planner=planner,
     )
-    wrapper = PhysicsStepWrapper(controller=controller, robot=dvrk, world=world)
 
     world.reset()
 
     psm_tool_tip = RigidPrim("/World/dVRK/psm_tool_tip_link", "psm_tool_tip_view")
     psm_tool_tip_pos = psm_tool_tip.get_world_poses()[0][0]
 
-    if plan_path is None:
-        plan = get_plan(task)
-    else:
-        # FIXME: The EE currently stops before being able to properly pick up the ring
-        plan = Plan.from_pddl(task, plan_path)
-    plan.add_via_points_to_plan()
-    print(
-        [
-            f"{action.action_type}, {action.target_position}"
-            for action in plan.action_sequence
-        ]
-    )
-    for trial in range(num_trials):
-        print(f"{'=' * 60}")
-        print(f"TRIAL {trial + 1}/{num_trials}")
-        print(f"{'=' * 60}")
+    plans_in_dir = [
+        plan_path
+        for plan_path in plan_path_dir.iterdir()
+        if plan_path.suffix == ".plan"
+    ]
 
+    results = []
+    for plan_path in plans_in_dir:
+        try:
+            plan = Plan.from_pddl(task, plan_path)
+        except ParsingException:
+            results.append(Result(plan_path.name, False))
+            continue
+        plan.add_via_points_to_plan()
         for action in plan.action_sequence:
             print(f"Executing action: {action.action_type}")
             if action.target_position is not None:
                 print("Target position:", action.target_position)
                 print("Target orientation:", action.target_orientation)
-
             max_steps = 300
-            # TODO: We need to find general stop-criteria that we can communicate via the task and/or for each step
-            #       to ensure a cleaner execution-flow
-            #       -> Ideally this will be added to the controller
+            grace_period = 300
             for step in range(max_steps):
-                wrapper.step(action)
+                if controller.completed(action) and step > grace_period:
+                    break
+                elif controller.completed(action) and grace_period == max_steps:
+                    grace_period = step + 20
+                robot_action = controller.forward(action)
+                dvrk.apply_action(robot_action)
+                world.step(render=True)
             print("Current EE position:", planner.get_end_effector_pose()[0])
             print(f"{'-' * 60}")
+        print(f"{'=' * 60}")
+        print("Goal configuration reached:", task.goal_reached())
+        print(f"{'=' * 60}")
+        results.append(Result(plan_path.name, task.goal_reached()))
         world.reset()
 
     print(f"{'=' * 60}")
     print("Simulation completed successfully!")
     print(f"{'=' * 60}")
+    Results(results).save_results(plan_path_dir)
     simulation_app.close()

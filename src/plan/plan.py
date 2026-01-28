@@ -13,6 +13,9 @@ class ActionType(StrEnum):
     PLACE = auto()
 
 
+class ParsingException(Exception): ...
+
+
 class Action:
     def __init__(
         self,
@@ -69,17 +72,20 @@ class Plan:
         with open(plan_path) as f:
             for line in f.readlines():
                 if re.match(move_pattern, line):
-                    prim = re.match(move_pattern, line).group(1)
-                    action_sequence.append(
-                        Action.from_prim(ActionType.MOVE, task.get_prim(prim))
-                    )
+                    prim = task.get_prim(re.match(move_pattern, line).group(1))
+                    if prim is None:
+                        raise ParsingException
+                    action_sequence.append(Action.from_prim(ActionType.MOVE, prim))
                 elif re.match(pick_pattern, line):
                     action_sequence.append(Action.from_prim(ActionType.PICK))
                 elif re.match(place_pattern, line):
                     action_sequence.append(Action.from_prim(ActionType.PLACE))
+                elif line.startswith("; cost"):
+                    continue
+                else:
+                    raise ParsingException
             return cls(action_sequence)
 
-    # TODO: It would still be nice to implement a cleaner way of doing this
     def add_via_points_to_plan(self):
         """
         This function adds via points 5cm above the target to make sure the gripper doesnt just push the object away
@@ -87,8 +93,11 @@ class Plan:
         around obstacles.
         """
         extended_sequence = []
-        for i, action in enumerate(self.action_sequence):
+        last_move = None
+        for action in self.action_sequence:
             if action.action_type == ActionType.MOVE:
+                last_move = action
+                # FIXME: apparently there are plans where no target was given. These will have to be rejected right away
                 extended_sequence.append(
                     Action.from_position_and_orientation(
                         target_position=action.target_position
@@ -101,14 +110,17 @@ class Plan:
                 action.action_type == ActionType.PICK
                 or action.action_type == ActionType.PLACE
             ):
-                assert self.action_sequence[i - 1].action_type == ActionType.MOVE
+                # We have not moved anywhere, cannot add a via point above pick/place position
+                if last_move is None:
+                    continue
+                # While the via points will not always make sense here, this is a best effort approach
+                # of ensuring the EE is always above the pick/place positions before the next move action
+                # to avoid colliding with the ground / obstacles
                 extended_sequence.append(
                     Action.from_position_and_orientation(
-                        target_position=self.action_sequence[i - 1].target_position
+                        target_position=last_move.target_position
                         + np.array([0.0, 0.0, 0.03]),
-                        target_orientation=self.action_sequence[
-                            i - 1
-                        ].target_orientation,
+                        target_orientation=last_move.target_orientation,
                     )
                 )
         self.action_sequence = extended_sequence
