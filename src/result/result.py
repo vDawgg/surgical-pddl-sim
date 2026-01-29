@@ -7,6 +7,8 @@ import polars as pl
 @dataclass
 class Result:
     plan_file: str
+    image_start: str
+    image_end: str | None
     success: bool
 
 

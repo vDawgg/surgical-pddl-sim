@@ -15,6 +15,7 @@ simulation_app: SimulationApp = SimulationApp({"headless": args.headless})
 
 # Suppress scientific notation for debug prints of np arrays
 import numpy as np
+import matplotlib.pyplot as plt
 
 np.set_printoptions(suppress=True)
 
@@ -52,6 +53,9 @@ if __name__ == "__main__":
     )
 
     world.reset()
+    task.camera.initialize()
+    plan_path_image_dir = plan_path_dir / "images"
+    plan_path_image_dir.mkdir(exist_ok=True)
 
     psm_tool_tip = RigidPrim("/World/dVRK/psm_tool_tip_link", "psm_tool_tip_view")
     psm_tool_tip_pos = psm_tool_tip.get_world_poses()[0][0]
@@ -64,10 +68,23 @@ if __name__ == "__main__":
 
     results = []
     for plan_path in plans_in_dir:
+        # Ensure stage is rendered before capturing start image
+        for _ in range(50):
+            world.step(render=True)
+        image_start_path = plan_path_image_dir / f"{plan_path.stem}_start.png"
+        plt.imsave(image_start_path, np.clip(task.camera.get_rgba() / 255.0, 0, 1))
+
         try:
             plan = Plan.from_pddl(task, plan_path)
         except ParsingException:
-            results.append(Result(plan_path.name, False))
+            results.append(
+                Result(
+                    plan_path.name,
+                    image_start_path.name,
+                    None,
+                    False,
+                )
+            )
             continue
         plan.add_via_points_to_plan()
         for action in plan.action_sequence:
@@ -90,7 +107,17 @@ if __name__ == "__main__":
         print(f"{'=' * 60}")
         print("Goal configuration reached:", task.goal_reached())
         print(f"{'=' * 60}")
-        results.append(Result(plan_path.name, task.goal_reached()))
+
+        image_end_path = plan_path_image_dir / f"{plan_path.stem}_end.png"
+        plt.imsave(image_end_path, np.clip(task.camera.get_rgba() / 255.0, 0, 1))
+        results.append(
+            Result(
+                plan_path.name,
+                image_start_path.name,
+                image_end_path.name,
+                task.goal_reached(),
+            )
+        )
         world.reset()
 
     print(f"{'=' * 60}")

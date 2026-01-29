@@ -1,8 +1,11 @@
 import numpy as np
+import isaacsim.core.utils.numpy.rotations as rot_utils
 from isaacsim.core.api.robots import Robot
 from isaacsim.core.api.scenes import Scene
 from isaacsim.core.utils.stage import add_reference_to_stage
 from isaacsim.core.api.tasks import BaseTask
+from isaacsim.core.experimental.objects import DistantLight
+from isaacsim.sensors.camera import Camera
 
 from src.base.prim import RigidOffsetPrim
 from src.constants import psm_dir
@@ -88,7 +91,30 @@ class DvrkTask(BaseTask):
 
     def set_up_scene(self, scene: Scene) -> None:
         super().set_up_scene(scene)
+        self.camera: Camera = scene.add(
+            Camera(
+                prim_path="/World/camera",
+                position=np.array([0.0, 1.0, 0.7]),
+                frequency=20,
+                resolution=(1024, 1024),
+                orientation=rot_utils.euler_angles_to_quats(
+                    np.array([0, 35, -90]), degrees=True
+                ),
+            )
+        )
+        self.camera.set_focal_length(8)
+
         scene.add_default_ground_plane()
+
+        # Add a light source to illuminate the scene
+        self.light = DistantLight(
+            "/World/defaultLight",
+            orientations=rot_utils.euler_angles_to_quats(
+                np.array([-45, 45, 0]), degrees=True
+            ),
+            reset_xform_op_properties=True,
+        )
+        self.light.set_intensities([3000])
 
         robot_path = psm_dir / "psm_col.usd"
         robot_primt_path = "/World/dVRK"

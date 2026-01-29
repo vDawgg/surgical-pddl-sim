@@ -2,6 +2,7 @@ import numpy as np
 from isaacsim.core.utils.stage import add_reference_to_stage
 from isaacsim.core.api.materials import OmniPBR
 from isaacsim.core.prims import SingleXFormPrim, XFormPrim
+from isaacsim.sensors.camera import Camera
 
 from src.base.prim import RigidOffsetPrim
 from src.base.task import DvrkTask, GoalConfig
