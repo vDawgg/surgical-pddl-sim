@@ -1,6 +1,8 @@
 from enum import StrEnum, auto
 from typing import TYPE_CHECKING
 
+from src.tasks.schemas import Problem
+
 if TYPE_CHECKING:
     from src.base.task import DvrkTask
     from src.plan.plan import Plan
@@ -11,7 +13,7 @@ class Task(StrEnum):
     RING_AND_PEG = auto()
 
 
-def get_task(task_name: str) -> "DvrkTask":
+def get_task(task_name: str, problem: Problem) -> "DvrkTask":
     from src.tasks.needle_transfer import NeedleTransfer
     from src.tasks.peg_and_ring import PegAndRing
 
@@ -19,7 +21,7 @@ def get_task(task_name: str) -> "DvrkTask":
         case Task.NEEDLE_TRANSFER:
             return NeedleTransfer(name="needle_transfer_task")
         case Task.RING_AND_PEG:
-            return PegAndRing(name="peg_and_ring_task")
+            return PegAndRing(name="peg_and_ring_task", problem=problem)
 
 
 def get_plan(task: "DvrkTask") -> "Plan":

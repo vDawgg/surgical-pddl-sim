@@ -1,10 +1,12 @@
 from argparse import ArgumentParser
 from pathlib import Path
 from src.tasks import Task
+from src.tasks.schemas import Problem
 
 # We need to execute the parsing step here as this will otherwise be ignored due to the sim-app loading
 parser = ArgumentParser()
 parser.add_argument("--task", choices=[t.value for t in Task], required=True)
+parser.add_argument("--problem", choices=[t.value for t in Problem], required=True)
 parser.add_argument("--plan_path_dir", required=True)
 parser.add_argument("--headless", action="store_true")
 args = parser.parse_args()
@@ -29,14 +31,13 @@ from src.result.result import Result, Results
 from src.tasks import get_task
 
 
-# TODO: Add a camera for proper view of the workspace and capture image at the start as VLM input
-#       and at the end for verfication (for now)
 if __name__ == "__main__":
     task_name = args.task
+    problem = args.problem
     plan_path_dir = Path(args.plan_path_dir)
     assert plan_path_dir.exists(), "Ensure that the given path exists"
 
-    task = get_task(task_name)
+    task = get_task(task_name, problem)
 
     ## Simulation setup
     world: World = World()
