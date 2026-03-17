@@ -4,7 +4,7 @@ from enum import StrEnum, auto
 import numpy as np
 from isaacsim.core.prims import SingleXFormPrim
 
-from src.tasks.peg_and_ring import PegAndRing
+from src.tasks.ring_and_peg import RingAndPeg
 
 
 class ActionType(StrEnum):
@@ -64,7 +64,7 @@ class Plan:
         return cls(action_sequence)
 
     @classmethod
-    def from_pddl(cls, task: PegAndRing, plan_path: str):
+    def from_pddl(cls, task: RingAndPeg, plan_path: str):
         move_pattern = r"\(\s*move\s+(\w+)[^)]*\)"
         pick_pattern = r"\(\s*pick\b[^)]*\)"
         place_pattern = r"\(\s*place\b[^)]*\)"
@@ -72,9 +72,13 @@ class Plan:
         with open(plan_path) as f:
             for line in f.readlines():
                 if re.match(move_pattern, line):
-                    prim = task.get_prim(re.match(move_pattern, line).group(1))
+                    move_prim = re.match(move_pattern, line).group(1)
+                    prim = task.get_prim(move_prim)
                     if prim is None:
-                        raise ParsingException
+                        raise ParsingException(
+                            "No corresponding prim found for move action."
+                            f"Prim in move action: {move_prim}"
+                        )
                     action_sequence.append(Action.from_prim(ActionType.MOVE, prim))
                 elif re.match(pick_pattern, line):
                     action_sequence.append(Action.from_prim(ActionType.PICK))
@@ -83,7 +87,9 @@ class Plan:
                 elif line.startswith("; cost"):
                     continue
                 else:
-                    raise ParsingException
+                    raise ParsingException(
+                        f"Line in plan does not match any known pattern.Line: '{line}'"
+                    )
             return cls(action_sequence)
 
     def add_via_points_to_plan(self):

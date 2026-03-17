@@ -64,7 +64,7 @@ class Ring(RigidOffsetPrim):
         )
 
 
-class PegAndRing(DvrkTask):
+class RingAndPeg(DvrkTask):
     def __init__(self, name, problem):
         super().__init__(name, gripper_closed_position=np.array([-0.2, 0.2]))
         self.peg_xy_position = {
@@ -132,25 +132,25 @@ class PegAndRing(DvrkTask):
         self.pink_peg.apply_visual_material(self.pink)
         self.yellow_peg.apply_visual_material(self.yellow)
 
-        if self.problem == Problem.PEG_AND_RING_1:
+        if self.problem == Problem.RING_AND_PEG_1:
             red_ring_starting_peg = pink_peg_name
             green_ring_starting_peg = yellow_peg_name
             blue_ring_starting_peg = red_peg_name
             yellow_ring_starting_peg = None
             pink_ring_starting_peg = None
-        elif self.problem == Problem.PEG_AND_RING_2:
+        elif self.problem == Problem.RING_AND_PEG_2:
             red_ring_starting_peg = None
             green_ring_starting_peg = None
             blue_ring_starting_peg = red_peg_name
             yellow_ring_starting_peg = blue_peg_name
             pink_ring_starting_peg = green_peg_name
-        elif self.problem == Problem.PEG_AND_RING_3:
+        elif self.problem == Problem.RING_AND_PEG_3:
             red_ring_starting_peg = red_peg_name
             green_ring_starting_peg = yellow_peg_name
             blue_ring_starting_peg = None
             yellow_ring_starting_peg = blue_peg_name
             pink_ring_starting_peg = green_peg_name
-        elif self.problem == Problem.PEG_AND_RING_4:
+        elif self.problem == Problem.RING_AND_PEG_5:
             red_ring_starting_peg = pink_peg_name
             green_ring_starting_peg = green_peg_name
             blue_ring_starting_peg = blue_peg_name
@@ -226,26 +226,26 @@ class PegAndRing(DvrkTask):
             )
             self.pink_ring.apply_visual_material(self.pink)
 
-        if self.problem == Problem.PEG_AND_RING_1:
+        if self.problem == Problem.RING_AND_PEG_1:
             self.goal = [
                 GoalConfig(self.red_ring, self.red_peg),
                 GoalConfig(self.green_ring, self.green_peg),
                 GoalConfig(self.blue_ring, self.blue_peg),
             ]
-        elif self.problem == Problem.PEG_AND_RING_2:
+        elif self.problem == Problem.RING_AND_PEG_2:
             self.goal = [
                 GoalConfig(self.blue_ring, self.blue_peg),
                 GoalConfig(self.yellow_ring, self.yellow_peg),
                 GoalConfig(self.pink_ring, self.pink_peg),
             ]
-        elif self.problem == Problem.PEG_AND_RING_3:
+        elif self.problem == Problem.RING_AND_PEG_3:
             self.goal = [
                 GoalConfig(self.red_ring, self.red_peg),
                 GoalConfig(self.green_ring, self.green_peg),
                 GoalConfig(self.yellow_ring, self.yellow_peg),
                 GoalConfig(self.pink_ring, self.pink_peg),
             ]
-        elif self.problem == Problem.PEG_AND_RING_4:
+        elif self.problem == Problem.RING_AND_PEG_5:
             self.goal = [
                 GoalConfig(self.red_ring, self.red_peg),
                 GoalConfig(self.green_ring, self.green_peg),
