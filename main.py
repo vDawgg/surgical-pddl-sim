@@ -7,7 +7,7 @@ from src.tasks.schemas import Problem
 parser = ArgumentParser()
 parser.add_argument("--task", choices=[t.value for t in Task], required=True)
 parser.add_argument("--problem", choices=[t.value for t in Problem], required=True)
-parser.add_argument("--plan_path_dir", required=True)
+parser.add_argument("--pipeline_results", required=True)
 parser.add_argument("--headless", action="store_true")
 args = parser.parse_args()
 
@@ -21,9 +21,11 @@ import matplotlib.pyplot as plt
 
 np.set_printoptions(suppress=True)
 
+import polars as pl
 from isaacsim.core.api import World
 from isaacsim.core.prims import RigidPrim
 
+from src.constants import results_dir
 from src.controller.lula_controller import LulaController
 from src.controller.lula_planner import LulaMotionPlanner
 from src.plan.plan import Plan, ParsingException
@@ -34,8 +36,9 @@ from src.tasks import get_task
 if __name__ == "__main__":
     task_name = args.task
     problem = args.problem
-    plan_path_dir = Path(args.plan_path_dir)
-    assert plan_path_dir.exists(), "Ensure that the given path exists"
+    results_file = Path(args.pipeline_results)
+    assert results_file.exists(), "Ensure that the given results file exists"
+    pipeline_results = pl.read_csv(results_file)
 
     task = get_task(task_name, problem)
 
@@ -55,32 +58,38 @@ if __name__ == "__main__":
 
     world.reset()
     task.camera.initialize()
-    plan_path_image_dir = plan_path_dir / "images"
-    plan_path_image_dir.mkdir(exist_ok=True)
+    curr_results_dir = results_dir / results_file.stem
+    curr_results_dir.mkdir(exist_ok=True)
+    curr_results_image_dir = curr_results_dir / "images"
+    curr_results_image_dir.mkdir(exist_ok=True)
 
     psm_tool_tip = RigidPrim("/World/dVRK/psm_tool_tip_link", "psm_tool_tip_view")
     psm_tool_tip_pos = psm_tool_tip.get_world_poses()[0][0]
 
-    plans_in_dir = [
-        plan_path
-        for plan_path in plan_path_dir.iterdir()
-        if plan_path.suffix == ".plan"
-    ]
-
     results = []
-    for plan_path in plans_in_dir:
+    for plan_path in pipeline_results["plan_file"]:
+        if plan_path is None:
+            results.append(
+                Result(
+                    None,
+                    None,
+                    False,
+                )
+            )
+            continue
+        plan_path = Path(plan_path)
         # Ensure stage is rendered before capturing start image
         for _ in range(50):
             world.step(render=True)
-        image_start_path = plan_path_image_dir / f"{plan_path.stem}_start.png"
+        image_start_path = curr_results_image_dir / f"{plan_path.stem}_start.png"
         plt.imsave(image_start_path, np.clip(task.camera.get_rgba() / 255.0, 0, 1))
 
         try:
             plan = Plan.from_pddl(task, plan_path)
-        except ParsingException:
+        except ParsingException as e:
+            print(e)
             results.append(
                 Result(
-                    plan_path.name,
                     image_start_path.name,
                     None,
                     False,
@@ -109,11 +118,10 @@ if __name__ == "__main__":
         print("Goal configuration reached:", task.goal_reached())
         print(f"{'=' * 60}")
 
-        image_end_path = plan_path_image_dir / f"{plan_path.stem}_end.png"
+        image_end_path = curr_results_image_dir / f"{plan_path.stem}_end.png"
         plt.imsave(image_end_path, np.clip(task.camera.get_rgba() / 255.0, 0, 1))
         results.append(
             Result(
-                plan_path.name,
                 image_start_path.name,
                 image_end_path.name,
                 task.goal_reached(),
@@ -124,5 +132,5 @@ if __name__ == "__main__":
     print(f"{'=' * 60}")
     print("Simulation completed successfully!")
     print(f"{'=' * 60}")
-    Results(results).save_results(plan_path_dir)
+    Results(results).save_results(pipeline_results, results_file)
     simulation_app.close()

@@ -6,8 +6,7 @@ import polars as pl
 
 @dataclass
 class Result:
-    plan_file: str
-    image_start: str
+    image_start: str | None
     image_end: str | None
     success: bool
 
@@ -16,7 +15,6 @@ class Result:
 class Results:
     results: list[Result]
 
-    def save_results(self, plan_dir: Path):
-        pl.DataFrame(result.__dict__ for result in self.results).write_csv(
-            plan_dir / "results.csv"
-        )
+    def save_results(self, results: pl.DataFrame, results_file_path: Path):
+        sim_results = pl.DataFrame(result.__dict__ for result in self.results)
+        results.hstack(sim_results).write_csv(results_file_path)

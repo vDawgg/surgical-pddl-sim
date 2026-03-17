@@ -2,7 +2,7 @@ from enum import StrEnum, auto
 
 
 class Problem(StrEnum):
-    PEG_AND_RING_1 = auto()
-    PEG_AND_RING_2 = auto()
-    PEG_AND_RING_3 = auto()
-    PEG_AND_RING_4 = auto()
+    RING_AND_PEG_1 = auto()
+    RING_AND_PEG_2 = auto()
+    RING_AND_PEG_3 = auto()
+    RING_AND_PEG_5 = auto()

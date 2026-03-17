@@ -15,19 +15,19 @@ class Task(StrEnum):
 
 def get_task(task_name: str, problem: Problem) -> "DvrkTask":
     from src.tasks.needle_transfer import NeedleTransfer
-    from src.tasks.peg_and_ring import PegAndRing
+    from src.tasks.ring_and_peg import RingAndPeg
 
     match task_name:
         case Task.NEEDLE_TRANSFER:
             return NeedleTransfer(name="needle_transfer_task")
         case Task.RING_AND_PEG:
-            return PegAndRing(name="peg_and_ring_task", problem=problem)
+            return RingAndPeg(name="ring_and_peg_task", problem=problem)
 
 
 def get_plan(task: "DvrkTask") -> "Plan":
     from src.plan.plan import Action, ActionType, Plan
     from src.tasks.needle_transfer import NeedleTransfer
-    from src.tasks.peg_and_ring import PegAndRing
+    from src.tasks.ring_and_peg import RingAndPeg
 
     if type(task) is NeedleTransfer:
         return Plan.from_actions(
@@ -38,7 +38,7 @@ def get_plan(task: "DvrkTask") -> "Plan":
                 Action.from_prim(ActionType.PLACE),
             ]
         )
-    elif type(task) is PegAndRing:
+    elif type(task) is RingAndPeg:
         return Plan.from_actions(
             [
                 Action.from_prim(ActionType.MOVE, task.blue_ring),
