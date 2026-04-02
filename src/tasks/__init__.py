@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 from src.tasks.schemas import Problem
 
 if TYPE_CHECKING:
-    from src.base.task import DvrkTask
+    from src.base.task import DvrkBaseTask
     from src.plan.plan import Plan
 
 
@@ -13,45 +13,12 @@ class Task(StrEnum):
     RING_AND_PEG = auto()
 
 
-def get_task(task_name: str, problem: Problem) -> "DvrkTask":
+def get_task(task_name: str, problem: Problem) -> "DvrkBaseTask":
     from src.tasks.needle_transfer import NeedleTransfer
     from src.tasks.ring_and_peg import RingAndPeg
 
     match task_name:
         case Task.NEEDLE_TRANSFER:
-            return NeedleTransfer(name="needle_transfer_task")
+            return NeedleTransfer(name="needle_transfer_task", problem=problem)
         case Task.RING_AND_PEG:
             return RingAndPeg(name="ring_and_peg_task", problem=problem)
-
-
-def get_plan(task: "DvrkTask") -> "Plan":
-    from src.plan.plan import Action, ActionType, Plan
-    from src.tasks.needle_transfer import NeedleTransfer
-    from src.tasks.ring_and_peg import RingAndPeg
-
-    if type(task) is NeedleTransfer:
-        return Plan.from_actions(
-            [
-                Action.from_prim(ActionType.MOVE, task.needle),
-                Action.from_prim(ActionType.PICK),
-                Action.from_prim(ActionType.MOVE, task.goal),
-                Action.from_prim(ActionType.PLACE),
-            ]
-        )
-    elif type(task) is RingAndPeg:
-        return Plan.from_actions(
-            [
-                Action.from_prim(ActionType.MOVE, task.blue_ring),
-                Action.from_prim(ActionType.PICK),
-                Action.from_prim(ActionType.MOVE, task.blue_peg),
-                Action.from_prim(ActionType.PLACE),
-                Action.from_prim(ActionType.MOVE, task.green_ring),
-                Action.from_prim(ActionType.PICK),
-                Action.from_prim(ActionType.MOVE, task.green_peg),
-                Action.from_prim(ActionType.PLACE),
-                Action.from_prim(ActionType.MOVE, task.red_ring),
-                Action.from_prim(ActionType.PICK),
-                Action.from_prim(ActionType.MOVE, task.red_peg),
-                Action.from_prim(ActionType.PLACE),
-            ]
-        )
