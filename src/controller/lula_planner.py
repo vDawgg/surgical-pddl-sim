@@ -20,10 +20,6 @@ class LulaMotionPlanner:
             maximum_substep_size=0.0033,
         )
         self._rmpflow.set_robot_base_pose(*robot.get_world_pose())
-        # TODO: This seems like it will be useful for us
-        # self._rmpflow.add_obstacle()
-        # self._rmpflow.set_ignore_state_updates(True)
-        # self._rmpflow.visualize_collision_spheres()
         self._articulation_policy = ArticulationMotionPolicy(robot, self._rmpflow)
 
     def set_end_effector_target(

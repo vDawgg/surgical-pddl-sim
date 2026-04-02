@@ -1,17 +1,13 @@
 import numpy as np
 from isaacsim.core.utils.stage import add_reference_to_stage
-from isaacsim.core.api.materials import OmniPBR
-from isaacsim.core.prims import SingleXFormPrim, XFormPrim
+from isaacsim.core.api.scenes import Scene
+from isaacsim.core.prims import XFormPrim
 
 from src.base.prim import RigidOffsetPrim
-from src.base.task import DvrkTask, GoalConfig
+from src.base.task import GoalConfig, SingleDvrkTask
+from src.plan.plan import Action, ActionType
 from src.constants import props_dir
 from src.tasks.schemas import Problem
-
-
-# TODO: Additionally create a variant of this with more possible pegs and rings
-# TODO: Either figure out how to repeatabilly allow for stacking the rings or only allow for
-#       problems with single-capacity pegs
 
 
 class Peg(RigidOffsetPrim):
@@ -26,47 +22,38 @@ class Peg(RigidOffsetPrim):
         visible=None,
         reset_xform_properties=True,
     ):
+        peg_points = {
+            "default": np.array([0.01, 0.0, -0.00375]),
+        }
+        peg_approach_points = {
+            "default": np.array([0.015, 0.0, 0.02]),
+        }
+        peg_departure_points = peg_approach_points
         super().__init__(
             prim_path,
-            np.array([0.01, 0.0, -0.004]),
-            name,
-            position,
-            translation,
-            orientation,
-            scale,
-            visible,
-            reset_xform_properties,
+            name=name,
+            position=position,
+            translation=translation,
+            orientation=orientation,
+            scale=scale,
+            visible=visible,
+            reset_xform_properties=reset_xform_properties,
+            contact_points=peg_points,
+            approach_points=peg_approach_points,
+            departure_points=peg_departure_points,
+            # Referencing the world frame delivers more stable results for this task
+            offset_in_local_frame=False,
         )
+        # Make sure contact point is initialized correctly
+        self.set_active_side("default")
 
 
-class Ring(RigidOffsetPrim):
-    def __init__(
-        self,
-        prim_path,
-        name="xform_prim",
-        position=None,
-        translation=None,
-        orientation=None,
-        scale=None,
-        visible=None,
-        reset_xform_properties=True,
-    ):
-        super().__init__(
-            prim_path,
-            np.array([0.01, 0.0, 0.0]),
-            name,
-            position,
-            translation,
-            orientation,
-            scale,
-            visible,
-            reset_xform_properties,
-        )
+class Ring(RigidOffsetPrim): ...
 
 
-class RingAndPeg(DvrkTask):
+class RingAndPeg(SingleDvrkTask):
     def __init__(self, name, problem):
-        super().__init__(name, gripper_closed_position=np.array([-0.2, 0.2]))
+        super().__init__(name, gripper_closed_position=np.array([-0.19, 0.19]))
         self.peg_xy_position = {
             "Peg": [0.0, 0.0],
             "Peg_01": [0.03, 0.0],
@@ -74,34 +61,10 @@ class RingAndPeg(DvrkTask):
             "Peg_03": [0.0, -0.03],
             "Peg_04": [-0.03, 0.0],
         }
-
         self.problem = problem
+        self.last_move_target = None
 
-        self.red = OmniPBR(
-            prim_path="/World/Looks/Red",
-            name="Red",
-            color=np.array([1.0, 0.0, 0.0]),
-        )
-        self.green = OmniPBR(
-            prim_path="/World/Looks/Green",
-            name="Green",
-            color=np.array([0.0, 1.0, 0.0]),
-        )
-        self.blue = OmniPBR(
-            prim_path="/World/Looks/Blue",
-            name="Blue",
-            color=np.array([0.0, 0.0, 1.0]),
-        )
-        self.pink = OmniPBR(
-            prim_path="/World/Looks/Pink", name="Pink", color=np.array([1.0, 0.0, 1.0])
-        )
-        self.yellow = OmniPBR(
-            prim_path="/World/Looks/Yellow",
-            name="Yellow",
-            color=np.array([1.0, 1.0, 0.0]),
-        )
-
-    def set_up_scene(self, scene):
+    def set_up_scene(self, scene: Scene):
         super().set_up_scene(scene)
         pegs_path = props_dir / "pegs.usd"
         ring_path = props_dir / "ring.usd"
@@ -150,12 +113,18 @@ class RingAndPeg(DvrkTask):
             blue_ring_starting_peg = None
             yellow_ring_starting_peg = blue_peg_name
             pink_ring_starting_peg = green_peg_name
-        elif self.problem == Problem.RING_AND_PEG_5:
+        elif self.problem == Problem.RING_AND_PEG_4:
             red_ring_starting_peg = pink_peg_name
             green_ring_starting_peg = green_peg_name
             blue_ring_starting_peg = blue_peg_name
             yellow_ring_starting_peg = red_peg_name
             pink_ring_starting_peg = None
+        elif self.problem == Problem.RING_AND_PEG_5:
+            red_ring_starting_peg = None
+            green_ring_starting_peg = blue_peg_name
+            blue_ring_starting_peg = pink_peg_name
+            yellow_ring_starting_peg = green_peg_name
+            pink_ring_starting_peg = yellow_peg_name
 
         if red_ring_starting_peg:
             add_reference_to_stage(usd_path=str(ring_path), prim_path="/World/Red_Ring")
@@ -245,15 +214,41 @@ class RingAndPeg(DvrkTask):
                 GoalConfig(self.yellow_ring, self.yellow_peg),
                 GoalConfig(self.pink_ring, self.pink_peg),
             ]
-        elif self.problem == Problem.RING_AND_PEG_5:
+        elif self.problem == Problem.RING_AND_PEG_4:
             self.goal = [
                 GoalConfig(self.red_ring, self.red_peg),
                 GoalConfig(self.green_ring, self.green_peg),
                 GoalConfig(self.blue_ring, self.blue_peg),
                 GoalConfig(self.yellow_ring, self.yellow_peg),
             ]
+        elif self.problem == Problem.RING_AND_PEG_5:
+            self.goal = [
+                GoalConfig(self.green_ring, self.green_peg),
+                GoalConfig(self.blue_ring, self.blue_peg),
+                GoalConfig(self.yellow_ring, self.yellow_peg),
+                GoalConfig(self.pink_ring, self.pink_peg),
+            ]
 
-    def get_prim(self, prim_name: str) -> SingleXFormPrim | None:
+    def post_reset(self):
+        super().post_reset()
+        self.last_move_target = None
+
+    def prepare_action(self, action: Action, robot_name: str, ee_pos: np.ndarray):
+        if action.action_type == ActionType.MOVE:
+            prim = self.get_prim(action.target_prim_name)
+            action.target_position, action.target_orientation = (
+                prim.get_world_pose_with_offset()
+            )
+            if self.last_move_target is not None:
+                # Add departure point of last prim
+                action.waypoint_targets.append(
+                    self.get_prim(self.last_move_target).get_world_departure_pose()
+                )
+            action.waypoint_targets.append(prim.get_world_approach_pose())
+            self.last_move_target = action.target_prim_name
+            action.waypoint_reached = False
+
+    def get_prim(self, prim_name: str) -> RigidOffsetPrim | None:
         match prim_name:
             case "red_peg":
                 return self.red_peg

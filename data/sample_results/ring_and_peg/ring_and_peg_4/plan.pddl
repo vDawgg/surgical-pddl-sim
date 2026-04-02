@@ -1,0 +1,8 @@
+(move red_peg)
+(pick)
+(move yellow_peg)
+(place)
+(move pink_peg)
+(pick)
+(move red_peg)
+(place)

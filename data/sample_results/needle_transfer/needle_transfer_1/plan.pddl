@@ -1,0 +1,8 @@
+(move left_arm red_ring)
+(move right_arm needle)
+(pick right_arm)
+(move right_arm red_ring)
+(pick left_arm)
+(place right_arm)
+(move left_arm goal)
+(place left_arm)

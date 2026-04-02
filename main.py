@@ -8,6 +8,7 @@ parser = ArgumentParser()
 parser.add_argument("--task", choices=[t.value for t in Task], required=True)
 parser.add_argument("--problem", choices=[t.value for t in Problem], required=True)
 parser.add_argument("--pipeline_results", required=True)
+parser.add_argument("--write-results", action="store_true")
 parser.add_argument("--headless", action="store_true")
 args = parser.parse_args()
 
@@ -23,8 +24,8 @@ np.set_printoptions(suppress=True)
 
 import polars as pl
 from isaacsim.core.api import World
-from isaacsim.core.prims import RigidPrim
 
+from src.base.task import Arms, DualDvrkTask, SingleDvrkTask
 from src.constants import results_dir
 from src.controller.lula_controller import LulaController
 from src.controller.lula_planner import LulaMotionPlanner
@@ -39,22 +40,49 @@ if __name__ == "__main__":
     results_file = Path(args.pipeline_results)
     assert results_file.exists(), "Ensure that the given results file exists"
     pipeline_results = pl.read_csv(results_file)
+    write_results = args.write_results
 
     task = get_task(task_name, problem)
 
     ## Simulation setup
-    world: World = World()
+    world: World = World(physics_dt=1.0 / 240.0, rendering_dt=1.0 / 60.0)
     world.add_task(task)
     world.reset()
 
-    dvrk = task._dvrk
-    planner = LulaMotionPlanner(robot=dvrk)
-    controller = LulaController(
-        name="psm_controller",
-        robot_articulation=dvrk,
-        gripper_positions=task.gripper_positions,
-        planner=planner,
-    )
+    is_dual_task = isinstance(task, DualDvrkTask)
+    if is_dual_task:
+        robots = {
+            Arms.LEFT_ARM: task._left_dvrk,
+            Arms.RIGHT_ARM: task._right_dvrk,
+        }
+        planners = {
+            name: LulaMotionPlanner(robot=robot) for name, robot in robots.items()
+        }
+        controllers = {
+            name: LulaController(
+                name=f"psm_controller_{name}",
+                robot_articulation=robot,
+                gripper_positions=task.gripper_positions,
+                planner=planners[name],
+                robot_name=name,
+            )
+            for name, robot in robots.items()
+        }
+        default_robot_name = Arms.LEFT_ARM
+    else:
+        assert isinstance(task, SingleDvrkTask)
+        robots = {"dvrk": task._dvrk}
+        planners = {"dvrk": LulaMotionPlanner(robot=task._dvrk)}
+        controllers = {
+            "dvrk": LulaController(
+                name="psm_controller",
+                robot_articulation=task._dvrk,
+                gripper_positions=task.gripper_positions,
+                planner=planners["dvrk"],
+                robot_name="dvrk",
+            )
+        }
+        default_robot_name = "dvrk"
 
     world.reset()
     task.camera.initialize()
@@ -62,9 +90,6 @@ if __name__ == "__main__":
     curr_results_dir.mkdir(exist_ok=True)
     curr_results_image_dir = curr_results_dir / "images"
     curr_results_image_dir.mkdir(exist_ok=True)
-
-    psm_tool_tip = RigidPrim("/World/dVRK/psm_tool_tip_link", "psm_tool_tip_view")
-    psm_tool_tip_pos = psm_tool_tip.get_world_poses()[0][0]
 
     results = []
     for plan_path in pipeline_results["plan_file"]:
@@ -96,9 +121,21 @@ if __name__ == "__main__":
                 )
             )
             continue
-        plan.add_via_points_to_plan()
         for action in plan.action_sequence:
-            print(f"Executing action: {action.action_type}")
+            robot_name = action.robot_name or default_robot_name
+            ee_pos = planners[robot_name].get_end_effector_pose()[0]
+            task.prepare_action(action, robot_name, ee_pos)
+            if robot_name not in controllers:
+                raise ValueError(
+                    "Unknown robot requested by action. "
+                    f"robot_name={robot_name}, available={list(controllers.keys())}"
+                )
+
+            controller = controllers[robot_name]
+            planner = planners[robot_name]
+            dvrk = robots[robot_name]
+
+            print(f"Executing action: {action.action_type} on {robot_name}")
             if action.target_position is not None:
                 print("Target position:", action.target_position)
                 print("Target orientation:", action.target_orientation)
@@ -132,5 +169,6 @@ if __name__ == "__main__":
     print(f"{'=' * 60}")
     print("Simulation completed successfully!")
     print(f"{'=' * 60}")
-    Results(results).save_results(pipeline_results, results_file)
+    if write_results:
+        Results(results).save_results(pipeline_results, results_file)
     simulation_app.close()
