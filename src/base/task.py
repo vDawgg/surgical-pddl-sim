@@ -152,20 +152,21 @@ class DvrkBaseTask(BaseTask, ABC):
         self.action_sequence = None
         self.goal: list[GoalConfig] | None = None
 
+        self._camera_center = np.array([0.0, 0.0, 0.0])
+        self._camera_height = 1.0
+        self._camera_radius = 1.0
+        self._camera_focal_length = 10
+
     def set_up_scene(self, scene: Scene) -> None:
         super().set_up_scene(scene)
         self.camera: Camera = scene.add(
             Camera(
                 prim_path="/World/camera",
-                position=np.array([0.0, 1.0, 0.7]),
-                frequency=20,
-                resolution=(1024, 1024),
-                orientation=rot_utils.euler_angles_to_quats(
-                    np.array([0, 35, -90]), degrees=True
-                ),
+                frequency=1,
+                resolution=(720, 720),
             )
         )
-        self.camera.set_focal_length(8)
+        self.camera.set_focal_length(self._camera_focal_length)
 
         self.ground_plane = scene.add_default_ground_plane()
 
@@ -178,6 +179,29 @@ class DvrkBaseTask(BaseTask, ABC):
             reset_xform_op_properties=True,
         )
         self.light.set_intensities([3000])
+
+    def rotate_camera(self, angle: float) -> None:
+        """
+        Rotate the camera around the center point by angle on the z-axis.
+        Ensures the camera is always directly pointed at the center point.
+        """
+        angle_rad = np.radians(angle)
+        x = self._camera_center[0] + self._camera_radius * np.cos(angle_rad)
+        y = self._camera_center[1] + self._camera_radius * np.sin(angle_rad)
+        z = self._camera_height
+        dx = self._camera_center[0] - x
+        dy = self._camera_center[1] - y
+        dz = self._camera_center[2] - z
+        yaw = np.degrees(np.arctan2(dy, dx))
+        horiz_dist = np.sqrt(dx**2 + dy**2)
+        pitch = np.degrees(np.arctan2(-dz, horiz_dist))
+        orientation = rot_utils.euler_angles_to_quats(
+            np.array([0, pitch, yaw]), degrees=True
+        )
+        self.camera.set_world_pose(
+            position=np.array([x, y, z]),
+            orientation=orientation,
+        )
 
     def goal_reached(self):
         return all(goal_config.is_at_goal() for goal_config in self.goal)

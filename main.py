@@ -86,6 +86,7 @@ if __name__ == "__main__":
 
     world.reset()
     task.camera.initialize()
+    task.rotate_camera(45)
     curr_results_dir = results_dir / results_file.stem
     curr_results_dir.mkdir(exist_ok=True)
     curr_results_image_dir = curr_results_dir / "images"
