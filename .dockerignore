@@ -1,0 +1,13 @@
+.git
+.gitignore
+.ruff_cache
+.venv
+venv
+vscode_env
+results/*
+!/**/.gitkeep
+experiments
+notes
+data/props/old
+__pycache__
+*.pyc

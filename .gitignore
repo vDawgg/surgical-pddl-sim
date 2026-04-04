@@ -221,5 +221,5 @@ experiments/
 notes/
 .vscode/
 data/props/old
-results/
-!results/.gitkeep
+images/*
+!/**/.gitkeep
