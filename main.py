@@ -26,7 +26,7 @@ import polars as pl
 from isaacsim.core.api import World
 
 from src.base.task import Arms, DualDvrkTask, SingleDvrkTask
-from src.constants import results_dir
+from src.constants import images_dir
 from src.controller.lula_controller import LulaController
 from src.controller.lula_planner import LulaMotionPlanner
 from src.plan.plan import Plan, ParsingException
@@ -87,7 +87,7 @@ if __name__ == "__main__":
     world.reset()
     task.camera.initialize()
     task.rotate_camera(45)
-    curr_results_dir = results_dir / results_file.stem
+    curr_results_dir = images_dir / results_file.stem
     curr_results_dir.mkdir(exist_ok=True)
     curr_results_image_dir = curr_results_dir / "images"
     curr_results_image_dir.mkdir(exist_ok=True)
