@@ -61,11 +61,13 @@ class GoalConfig:
         self,
         prim: RigidOffsetPrim,
         goal_prim: RigidOffsetPrim,
+        dist_thresh: float = 0.005,
         passed_through_ring_order: list[str] | None = None,
         required_passed_through_ring_order: list[str] | None = None,
     ):
         self.prim = prim
         self.goal_prim = goal_prim
+        self.dist_thresh = dist_thresh
         self.passed_through_ring_order = passed_through_ring_order
         self.required_passed_through_ring_order = required_passed_through_ring_order
 
@@ -79,7 +81,9 @@ class GoalConfig:
     def is_at_goal(self):
         x_y_pos, _ = self.prim.get_world_pose()
         target_pos, _ = self.goal_prim.get_world_pose()
-        is_at_target_position = np.sqrt(np.sum(x_y_pos - target_pos) ** 2) <= 0.005
+        is_at_target_position = (
+            np.sqrt(np.sum(x_y_pos - target_pos) ** 2) <= self.dist_thresh
+        )
         return is_at_target_position and self._ring_order_requirement_met()
 
 
