@@ -158,6 +158,71 @@ class NeedleTransfer(DualDvrkTask):
         self.required_passed_through_ring_order: list[str] | None = None
         self.problem = problem
 
+    def _add_needle(
+        self,
+        scene: Scene,
+        needle_path: str,
+        prim_path: str,
+        name: str,
+        position: np.ndarray,
+        orientation: np.ndarray,
+    ) -> Needle:
+        add_reference_to_stage(usd_path=needle_path, prim_path=prim_path)
+        return scene.add(
+            Needle(
+                prim_path=prim_path,
+                name=name,
+                position=position,
+                orientation=orientation,
+            )
+        )
+
+    def _add_goal(
+        self,
+        scene: Scene,
+        goal_path: str,
+        prim_path: str,
+        name: str,
+        position: np.ndarray,
+        orientation: np.ndarray,
+        material,
+    ) -> Goal:
+        add_reference_to_stage(usd_path=goal_path, prim_path=prim_path)
+        goal = scene.add(
+            Goal(
+                prim_path=prim_path,
+                name=name,
+                position=position,
+                orientation=orientation,
+            )
+        )
+        goal.apply_visual_material(material)
+        return goal
+
+    def _add_ring(
+        self,
+        scene: Scene,
+        ring_path: str,
+        prim_path: str,
+        name: str,
+        position: np.ndarray,
+        orientation: np.ndarray,
+        scale: np.ndarray,
+        material,
+    ) -> Ring:
+        add_reference_to_stage(usd_path=ring_path, prim_path=prim_path)
+        ring = scene.add(
+            Ring(
+                prim_path=prim_path,
+                name=name,
+                position=position,
+                orientation=orientation,
+                scale=scale,
+            )
+        )
+        ring.apply_visual_material(material)
+        return ring
+
     def set_up_scene(self, scene: Scene):
         super().set_up_scene(scene)
         z_rot_90 = rot_utils.euler_angles_to_quats(
@@ -169,25 +234,23 @@ class NeedleTransfer(DualDvrkTask):
         ring_path = props_dir / "hole_with_stand.usd"
         goal_path = props_dir / "goal.usd"
 
-        add_reference_to_stage(usd_path=str(needle_path), prim_path="/World/Needle")
-        self.needle: Needle = scene.add(
-            Needle(
-                prim_path="/World/Needle",
-                name="Needle",
-                position=np.array([-0.1, 0.0, 0.0]),
-                orientation=z_rot_90,
-            )
+        self.needle: Needle = self._add_needle(
+            scene=scene,
+            needle_path=str(needle_path),
+            prim_path="/World/Needle",
+            name="Needle",
+            position=np.array([-0.1, 0.0, 0.0]),
+            orientation=z_rot_90,
         )
-        add_reference_to_stage(usd_path=str(goal_path), prim_path="/World/Goal")
-        self.goal_position: Goal = scene.add(
-            Goal(
-                prim_path="/World/Goal",
-                name="Goal",
-                position=np.array([0.1, 0.0, 0.0]),
-                orientation=z_rot_90,
-            )
+        self.goal_position: Goal = self._add_goal(
+            scene=scene,
+            goal_path=str(goal_path),
+            prim_path="/World/Goal",
+            name="Goal",
+            position=np.array([0.1, 0.0, 0.0]),
+            orientation=z_rot_90,
+            material=self.black,
         )
-        self.goal_position.apply_visual_material(self.black)
 
         if self.problem == Problem.NEEDLE_TRANSFER_1:
             red_ring_pose = (np.array([0.0, 0.0, 0.0]), z_rot_90)
@@ -199,46 +262,38 @@ class NeedleTransfer(DualDvrkTask):
             blue_ring_pose = (np.array([0.0, 0.025, 0.0]), z_rot_90)
 
         if red_ring_pose:
-            add_reference_to_stage(usd_path=str(ring_path), prim_path="/World/Red_Ring")
-            self.red_ring: Ring = scene.add(
-                Ring(
-                    prim_path="/World/Red_Ring",
-                    name="Red_Ring",
-                    position=red_ring_pose[0],
-                    orientation=red_ring_pose[1],
-                    scale=ring_scale,
-                )
+            self.red_ring: Ring = self._add_ring(
+                scene=scene,
+                ring_path=str(ring_path),
+                prim_path="/World/Red_Ring",
+                name="Red_Ring",
+                position=red_ring_pose[0],
+                orientation=red_ring_pose[1],
+                scale=ring_scale,
+                material=self.red,
             )
-            self.red_ring.apply_visual_material(self.red)
         if green_ring_pose:
-            print("Adding green ring")
-            add_reference_to_stage(
-                usd_path=str(ring_path), prim_path="/World/Green_Ring"
+            self.green_ring: Ring = self._add_ring(
+                scene=scene,
+                ring_path=str(ring_path),
+                prim_path="/World/Green_Ring",
+                name="Green_Ring",
+                position=green_ring_pose[0],
+                orientation=green_ring_pose[1],
+                scale=ring_scale,
+                material=self.green,
             )
-            self.green_ring: Ring = scene.add(
-                Ring(
-                    prim_path="/World/Green_Ring",
-                    name="Green_Ring",
-                    position=green_ring_pose[0],
-                    orientation=green_ring_pose[1],
-                    scale=ring_scale,
-                )
-            )
-            self.green_ring.apply_visual_material(self.green)
         if blue_ring_pose:
-            add_reference_to_stage(
-                usd_path=str(ring_path), prim_path="/World/Blue_Ring"
+            self.blue_ring: Ring = self._add_ring(
+                scene=scene,
+                ring_path=str(ring_path),
+                prim_path="/World/Blue_Ring",
+                name="Blue_Ring",
+                position=blue_ring_pose[0],
+                orientation=blue_ring_pose[1],
+                scale=ring_scale,
+                material=self.blue,
             )
-            self.blue_ring: Ring = scene.add(
-                Ring(
-                    prim_path="/World/Blue_Ring",
-                    name="Blue_Ring",
-                    position=blue_ring_pose[0],
-                    orientation=blue_ring_pose[1],
-                    scale=ring_scale,
-                )
-            )
-            self.blue_ring.apply_visual_material(self.blue)
 
         if self.problem == Problem.NEEDLE_TRANSFER_1:
             self.goal = [

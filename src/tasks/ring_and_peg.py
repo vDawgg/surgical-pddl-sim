@@ -64,6 +64,26 @@ class RingAndPeg(SingleDvrkTask):
         self.problem = problem
         self.last_move_target = None
 
+    def _add_ring(
+        self,
+        scene: Scene,
+        ring_path: str,
+        prim_path: str,
+        name: str,
+        position: np.ndarray,
+        material,
+    ) -> Ring:
+        add_reference_to_stage(usd_path=ring_path, prim_path=prim_path)
+        ring = scene.add(
+            Ring(
+                prim_path=prim_path,
+                name=name,
+                position=position,
+            )
+        )
+        ring.apply_visual_material(material)
+        return ring
+
     def set_up_scene(self, scene: Scene):
         super().set_up_scene(scene)
         pegs_path = props_dir / "pegs.usd"
@@ -127,73 +147,60 @@ class RingAndPeg(SingleDvrkTask):
             pink_ring_starting_peg = yellow_peg_name
 
         if red_ring_starting_peg:
-            add_reference_to_stage(usd_path=str(ring_path), prim_path="/World/Red_Ring")
-            self.red_ring = scene.add(
-                Ring(
-                    prim_path="/World/Red_Ring",
-                    name="Red_Ring",
-                    position=np.array(
-                        [*self.peg_xy_position[red_ring_starting_peg], ring_z_offset]
-                    ),
-                )
+            self.red_ring = self._add_ring(
+                scene=scene,
+                ring_path=str(ring_path),
+                prim_path="/World/Red_Ring",
+                name="Red_Ring",
+                position=np.array(
+                    [*self.peg_xy_position[red_ring_starting_peg], ring_z_offset]
+                ),
+                material=self.red,
             )
-            self.red_ring.apply_visual_material(self.red)
         if green_ring_starting_peg:
-            add_reference_to_stage(
-                usd_path=str(ring_path), prim_path="/World/Green_Ring"
+            self.green_ring = self._add_ring(
+                scene=scene,
+                ring_path=str(ring_path),
+                prim_path="/World/Green_Ring",
+                name="Green_Ring",
+                position=np.array(
+                    [*self.peg_xy_position[green_ring_starting_peg], ring_z_offset]
+                ),
+                material=self.green,
             )
-            self.green_ring = scene.add(
-                Ring(
-                    prim_path="/World/Green_Ring",
-                    name="Green_Ring",
-                    position=np.array(
-                        [*self.peg_xy_position[green_ring_starting_peg], ring_z_offset]
-                    ),
-                )
-            )
-            self.green_ring.apply_visual_material(self.green)
         if blue_ring_starting_peg:
-            add_reference_to_stage(
-                usd_path=str(ring_path), prim_path="/World/Blue_Ring"
+            self.blue_ring = self._add_ring(
+                scene=scene,
+                ring_path=str(ring_path),
+                prim_path="/World/Blue_Ring",
+                name="Blue_Ring",
+                position=np.array(
+                    [*self.peg_xy_position[blue_ring_starting_peg], ring_z_offset]
+                ),
+                material=self.blue,
             )
-            self.blue_ring = scene.add(
-                Ring(
-                    prim_path="/World/Blue_Ring",
-                    name="Blue_Ring",
-                    position=np.array(
-                        [*self.peg_xy_position[blue_ring_starting_peg], ring_z_offset]
-                    ),
-                )
-            )
-            self.blue_ring.apply_visual_material(self.blue)
         if yellow_ring_starting_peg:
-            add_reference_to_stage(
-                usd_path=str(ring_path), prim_path="/World/Yellow_Ring"
+            self.yellow_ring = self._add_ring(
+                scene=scene,
+                ring_path=str(ring_path),
+                prim_path="/World/Yellow_Ring",
+                name="Yellow_Ring",
+                position=np.array(
+                    [*self.peg_xy_position[yellow_ring_starting_peg], ring_z_offset]
+                ),
+                material=self.yellow,
             )
-            self.yellow_ring = scene.add(
-                Ring(
-                    prim_path="/World/Yellow_Ring",
-                    name="Yellow_Ring",
-                    position=np.array(
-                        [*self.peg_xy_position[yellow_ring_starting_peg], ring_z_offset]
-                    ),
-                )
-            )
-            self.yellow_ring.apply_visual_material(self.yellow)
         if pink_ring_starting_peg:
-            add_reference_to_stage(
-                usd_path=str(ring_path), prim_path="/World/Pink_Ring"
+            self.pink_ring = self._add_ring(
+                scene=scene,
+                ring_path=str(ring_path),
+                prim_path="/World/Pink_Ring",
+                name="Pink_Ring",
+                position=np.array(
+                    [*self.peg_xy_position[pink_ring_starting_peg], ring_z_offset]
+                ),
+                material=self.pink,
             )
-            self.pink_ring = scene.add(
-                Ring(
-                    prim_path="/World/Pink_Ring",
-                    name="Pink_Ring",
-                    position=np.array(
-                        [*self.peg_xy_position[pink_ring_starting_peg], ring_z_offset]
-                    ),
-                )
-            )
-            self.pink_ring.apply_visual_material(self.pink)
 
         if self.problem == Problem.RING_AND_PEG_1:
             self.goal = [
