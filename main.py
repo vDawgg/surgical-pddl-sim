@@ -5,10 +5,10 @@ from src.tasks.schemas import Problem
 
 # We need to execute the parsing step here as this will otherwise be ignored due to the sim-app loading
 parser = ArgumentParser()
-parser.add_argument("--task", choices=[t.value for t in Task], required=True)
+parser.add_argument("--domain", choices=[t.value for t in Task], required=True)
 parser.add_argument("--problem", choices=[t.value for t in Problem], required=True)
 parser.add_argument("--pipeline_results", required=True)
-parser.add_argument("--write-results", action="store_true")
+parser.add_argument("--write_results", action="store_true")
 parser.add_argument("--headless", action="store_true")
 args = parser.parse_args()
 
@@ -35,7 +35,7 @@ from src.tasks import get_task
 
 
 if __name__ == "__main__":
-    task_name = args.task
+    task_name = args.domain
     problem = args.problem
     results_file = Path(args.pipeline_results)
     assert results_file.exists(), "Ensure that the given results file exists"

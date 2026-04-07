@@ -28,7 +28,7 @@ The simulation environment in this repository is intended as a means of validati
 An exemplary program execution would look like the following:
 ```bash
 uv run main.py \
---task ring_and_peg \
+--domain ring_and_peg \
 --problem ring_and_peg_1 \
 --pipeline_results data/sample_results/ring_and_peg/ring_and_peg_1/results.csv
 ```
@@ -36,7 +36,7 @@ To view all available options, run ```uv run main.py --help```
 
 Exemplary plans under [sample_results](data/sample_results/) can be used as input for testing the sim.
 
-The results (success of the given plans) are then written to the same results file to ensure a single source for the evaluation.
+If the ```--write-results``` flag is passed, the results (success of the given plans) are written to the same results file to ensure a single source for the evaluation. The default behavior does not write the simulation results to the file.
 
 # Docker
 
@@ -79,8 +79,8 @@ docker run --rm --gpus all --network=host \
   -v ./results:/isaac-sim/results \
   -v ./plans:/isaac-sim/plans \
   sim:latest \
-  --task needle_transfer --problem needle_transfer_1 \
-  --pipeline_results /isaac-sim/results/needle_transfer_1.csv --write-results
+  --domain needle_transfer --problem needle_transfer_1 \
+  --pipeline_results /isaac-sim/results/needle_transfer_1.csv --write_results
 ```
 
 Note: X11 forwarding requires your X server to allow connections from the container. You may need to run `xhost +local:docker` before launching the container.
