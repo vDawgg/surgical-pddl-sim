@@ -76,11 +76,11 @@ docker run --rm --gpus all --network=host \
   -e DISPLAY=$DISPLAY \
   -v /tmp/.X11-unix:/tmp/.X11-unix \
   -v $HOME/.Xauthority:/isaac-sim/.Xauthority \
-  -v ./results:/isaac-sim/results \
-  -v ./plans:/isaac-sim/plans \
+  -v ./results:/app/results \
+  -v ./plans:/app/plans \
   sim:latest \
   --domain needle_transfer --problem needle_transfer_1 \
-  --pipeline_results /isaac-sim/results/needle_transfer_1.csv --write_results
+  --pipeline_results /app/results/needle_transfer_1.csv --write_results
 ```
 
 Note: X11 forwarding requires your X server to allow connections from the container. You may need to run `xhost +local:docker` before launching the container.
