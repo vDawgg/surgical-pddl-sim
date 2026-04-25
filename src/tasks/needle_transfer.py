@@ -38,8 +38,8 @@ class Ring(RigidOffsetPrim):
             Side.RIGHT_POINT: np.array([0.0, 0.01, 0.02]),
         }
         approach_points = {
-            Side.LEFT_POINT: np.array([0.0, -0.025, 0.02]),
-            Side.RIGHT_POINT: np.array([0.0, 0.025, 0.02]),
+            Side.LEFT_POINT: np.array([0.0, -0.05, 0.02]),
+            Side.RIGHT_POINT: np.array([0.0, 0.05, 0.02]),
         }
         departure_points = approach_points
         super().__init__(
@@ -78,8 +78,8 @@ class Needle(RigidOffsetPrim):
             Side.RIGHT_POINT: np.array([0.0, 0.01, 0.03]),
         }
         departure_points = {
-            Side.LEFT_POINT: np.array([0.0, -0.03, 0.005]),
-            Side.RIGHT_POINT: np.array([0.0, 0.03, 0.005]),
+            Side.LEFT_POINT: np.array([0.0, -0.05, 0.005]),
+            Side.RIGHT_POINT: np.array([0.0, 0.05, 0.005]),
         }
         super().__init__(
             prim_path,
@@ -113,8 +113,8 @@ class Goal(RigidOffsetPrim):
             Side.RIGHT_POINT: np.array([0.0, 0.01, 0.0]),
         }
         approach_points = {
-            Side.LEFT_POINT: np.array([0.0, 0.0, 0.03]),
-            Side.RIGHT_POINT: np.array([0.0, 0.0, 0.03]),
+            Side.LEFT_POINT: np.array([0.0, -0.05, 0.03]),
+            Side.RIGHT_POINT: np.array([0.0, 0.05, 0.03]),
         }
         super().__init__(
             prim_path,
@@ -234,12 +234,16 @@ class NeedleTransfer(DualDvrkTask):
         ring_path = props_dir / "hole_with_stand.usd"
         goal_path = props_dir / "goal.usd"
 
+        # TODO: The goal is to close to the rings
+        #       The goal needs larger distance on approach
+        #       The approach distance for the rings should be larger as well
+
         self.needle: Needle = self._add_needle(
             scene=scene,
             needle_path=str(needle_path),
             prim_path="/World/Needle",
             name="Needle",
-            position=np.array([-0.1, 0.0, 0.0]),
+            position=np.array([0.0, 0.05, 0.0]),
             orientation=z_rot_90,
         )
         self.goal_position: Goal = self._add_goal(
@@ -247,7 +251,7 @@ class NeedleTransfer(DualDvrkTask):
             goal_path=str(goal_path),
             prim_path="/World/Goal",
             name="Goal",
-            position=np.array([0.1, 0.0, 0.0]),
+            position=np.array([0.0, -0.06, 0.0]),
             orientation=z_rot_90,
             material=self.black,
         )
