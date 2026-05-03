@@ -82,7 +82,7 @@ class GoalConfig:
         x_y_pos, _ = self.prim.get_world_pose()
         target_pos, _ = self.goal_prim.get_world_pose()
         is_at_target_position = (
-            np.sqrt(np.sum(x_y_pos - target_pos) ** 2) <= self.dist_thresh
+            np.sqrt(np.sum((x_y_pos - target_pos) ** 2)) <= self.dist_thresh
         )
         return is_at_target_position and self._ring_order_requirement_met()
 
