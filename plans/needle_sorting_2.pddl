@@ -34,3 +34,7 @@
 (pick)
 (move blue_goal)
 (place)
+(move blue_needle_5)
+(pick)
+(move blue_goal)
+(place)

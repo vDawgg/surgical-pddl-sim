@@ -172,7 +172,7 @@ class NeedleSorting(SingleDvrkTask):
         elif self.problem == Problem.NEEDLE_SORTING_2:
             red_count = 2
             green_count = 3
-            blue_count = 4
+            blue_count = 5
         elif self.problem == Problem.NEEDLE_SORTING_3:
             red_count = 5
             green_count = 5
