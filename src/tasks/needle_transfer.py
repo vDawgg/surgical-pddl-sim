@@ -130,8 +130,6 @@ class Goal(RigidOffsetPrim):
         )
 
 
-# NOTE: If we really feel like it we can also add a variation of this with multiple needles
-#       that need to be transferred to different goals in different sequences
 class NeedleTransfer(DualDvrkTask):
     def __init__(self, name, problem):
         super().__init__(name, gripper_closed_position=np.array([-0.125, 0.125]))
@@ -329,7 +327,6 @@ class NeedleTransfer(DualDvrkTask):
         self, action: Action, side: Side, prim: Prims, last_prim: Prims | None
     ) -> None:
         if last_prim is not None:
-            print(f"Adding departure point for {last_prim}")
             # Add departure point of last prim to trajectory
             self.get_prim(last_prim).set_active_side(side)
             action.waypoint_targets.append(
@@ -367,12 +364,26 @@ class NeedleTransfer(DualDvrkTask):
                 self._last_move_target_by_arm[arm],
             )
             self._last_move_target_by_arm[arm] = action.target_prim_name
-            if self._arm_holding_needle[arm] and action.target_prim_name in self.rings:
-                # Moved needle through ring, append to 'threaded' rings
-                self.passed_through_ring_order.append(action.target_prim_name)
         elif action.action_type == ActionType.PICK:
-            if self._last_move_target_by_arm[arm] == Prims.NEEDLE:
+            ring_targets = [
+                target
+                for target in self._last_move_target_by_arm.values()
+                if target in self.rings
+            ]
+            holding_values = [holding for holding in self._arm_holding_needle.values()]
+            # Assume that robot is holding needle if last target was needle, or both
+            # arms are currently at the same ring and one of the robots is holding the needle
+            if self._last_move_target_by_arm[arm] == Prims.NEEDLE or (
+                len(ring_targets) == 2
+                and ring_targets[0] == ring_targets[1]
+                and any(holding_values)
+            ):
                 self._arm_holding_needle[arm] = True
+            holding_values = [holding for holding in self._arm_holding_needle.values()]
+            if all(holding_values) and any(ring_targets):
+                # Moved needle through ring and both arms are gripping needle.
+                # -> Can assume pass-over has occurred.
+                self.passed_through_ring_order.append(ring_targets[0])
         elif action.action_type == ActionType.PLACE:
             if self._arm_holding_needle[arm]:
                 self._arm_holding_needle[arm] = False
