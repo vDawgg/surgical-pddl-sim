@@ -222,4 +222,5 @@ notes/
 .vscode/
 data/props/old
 images/*
+videos/*
 !/**/.gitkeep

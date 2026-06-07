@@ -10,6 +10,7 @@ parser.add_argument("--problem", choices=[t.value for t in Problem], required=Tr
 parser.add_argument("--pipeline_results", required=True)
 parser.add_argument("--write_results", action="store_true")
 parser.add_argument("--headless", action="store_true")
+parser.add_argument("--record_video", action="store_true")
 args = parser.parse_args()
 
 from isaacsim.simulation_app import SimulationApp
@@ -19,6 +20,7 @@ simulation_app: SimulationApp = SimulationApp({"headless": args.headless})
 # Suppress scientific notation for debug prints of np arrays
 import numpy as np
 import matplotlib.pyplot as plt
+import cv2
 
 np.set_printoptions(suppress=True)
 
@@ -26,7 +28,7 @@ import polars as pl
 from isaacsim.core.api import World
 
 from src.base.task import Arms, DualDvrkTask, SingleDvrkTask
-from src.constants import images_dir
+from src.constants import images_dir, videos_dir
 from src.controller.lula_controller import LulaController
 from src.controller.lula_planner import LulaMotionPlanner
 from src.plan.plan import Plan, ParsingException
@@ -41,6 +43,8 @@ if __name__ == "__main__":
     assert results_file.exists(), "Ensure that the given results file exists"
     pipeline_results = pl.read_csv(results_file)
     write_results = args.write_results
+    record_video = args.record_video
+    video_fps = 60
 
     task = get_task(task_name, problem)
 
@@ -92,6 +96,9 @@ if __name__ == "__main__":
     curr_results_image_dir = curr_results_dir / "images"
     curr_results_image_dir.mkdir(exist_ok=True)
 
+    def normalize_frame(frame: np.ndarray) -> np.ndarray:
+        return cv2.cvtColor(frame, cv2.COLOR_RGBA2BGR)
+
     results = []
     for plan_path in pipeline_results["plan_file"]:
         if plan_path is None:
@@ -122,6 +129,9 @@ if __name__ == "__main__":
                 )
             )
             continue
+        video_writer = None
+        video_path = videos_dir / f"{plan_path.stem}.mp4"
+
         for action in plan.action_sequence:
             robot_name = action.robot_name or default_robot_name
             ee_pos = planners[robot_name].get_end_effector_pose()[0]
@@ -142,6 +152,16 @@ if __name__ == "__main__":
                 print("Target orientation:", action.target_orientation)
             max_steps = 300
             grace_period = 300
+            if record_video and video_writer is None:
+                first_frame = normalize_frame(task.camera.get_rgba())
+                height, width = first_frame.shape[:2]
+                video_writer = cv2.VideoWriter(
+                    str(video_path),
+                    cv2.VideoWriter_fourcc(*"mp4v"),
+                    video_fps,
+                    (width, height),
+                )
+                video_writer.write(first_frame)
             for step in range(max_steps):
                 if controller.completed(action) and step > grace_period:
                     break
@@ -150,8 +170,13 @@ if __name__ == "__main__":
                 robot_action = controller.forward(action)
                 dvrk.apply_action(robot_action)
                 world.step(render=True)
+                if record_video and video_writer is not None:
+                    frame = normalize_frame(task.camera.get_rgba())
+                    video_writer.write(frame)
             print("Current EE position:", planner.get_end_effector_pose()[0])
             print(f"{'-' * 60}")
+        if record_video and video_writer is not None:
+            video_writer.release()
         print(f"{'=' * 60}")
         print("Goal configuration reached:", task.goal_reached())
         print(f"{'=' * 60}")

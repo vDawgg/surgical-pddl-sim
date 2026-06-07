@@ -68,7 +68,7 @@ class Ring(RigidOffsetPrim): ...
 
 class RingAndPeg(SingleDvrkTask):
     def __init__(self, name, problem):
-        super().__init__(name, gripper_closed_position=np.array([-0.195, 0.195]))
+        super().__init__(name, gripper_closed_position=np.array([-0.19, 0.19]))
         self.peg_xy_position = {
             Prims.RED_PEG: [0.0, 0.0],
             Prims.GREEN_PEG: [0.03, 0.0],
