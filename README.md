@@ -62,7 +62,7 @@ Exemplary plans under [sample_results](data/sample_results/) can be used as inpu
 
 If the ```--write-results``` flag is passed, the results (success of the given plans) are written to the same results file to ensure a single source for the evaluation. The default behavior does not write the simulation results to the file.
 
-The easiest way to run the simulation on results generated using the [pipeline](https://git.tu-berlin.de/shuai_ws/students/veit_ws/pddl_pipeline) are to execute the simulation inside of the pipeline directory so that the relative paths properly resolve.
+The easiest way to run the simulation on results generated using the pipeline are to execute the simulation inside of the pipeline directory so that the relative paths properly resolve.
 
 # Docker
 
