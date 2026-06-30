@@ -8,19 +8,19 @@ The available tasks consist of the following domains:
 
 A set of coloured rings need to be transferred on a set of rings of the same colour using a single dVRK Patient Side Manipulator (PSM). This task is inspired by a task originally proposed by [Derossis et al.](https://doi.org/https://doi.org/10.1016/S0002-9610(98)00080-4) for training and evaluating laparoscopic skills.
 
-<img src="videos/ring_and_peg_1.gif", width=100, height=100 />
+<img src="videos/ring_and_peg_1.gif" width=300 height=300 />
 
 ## needle\_sorting
 
 A set of coloured needles needs to be transferred on a set of pates with the same colour using a single dVRK PSM. This task is inspired by a tasks that was originally developed for the dV-Trainer &#174; (MIMIC Technologies &#174;) training simulator intended for daVinci surgical robotics platforms.
 
-<img src="videos/needle_sorting_2.gif", width=100, height=100 />
+<img src="videos/needle_sorting_2.gif" width=300 height=300 />
 
 ## needle\_transfer
 
-A needle needs to be transferred between two dVRK PSMs by passing the needle through a set of rings in a specific sequence. As the ```needle\_transfer``` task, this task is inspired by a task from the dV-Trainer &#174; simulator.
+A needle needs to be transferred between two dVRK PSMs by passing the needle through a set of rings in a specific sequence. As the ```needle_transfer``` task, this task is inspired by a task from the dV-Trainer &#174; simulator.
 
-<img src="videos/needle_transfer_2.gif", width=100, height=100 />
+<img src="videos/needle_transfer_2.gif" width=300 height=300 />
 
 # Setup
 

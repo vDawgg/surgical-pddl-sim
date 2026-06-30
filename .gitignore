@@ -223,4 +223,7 @@ notes/
 data/props/old
 images/*
 videos/*
+!videos/needle_sorting_2.gif
+!videos/needle_transfer_2.gif
+!videos/ring_and_peg_1.gif
 !/**/.gitkeep
